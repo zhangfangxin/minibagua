@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>易经八卦 - 随机占卜</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #f0f0f0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        line-height: 1.6;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+        padding: 20px 10px;
+      }
+
+      header {
+        margin-bottom: 25px;
+      }
+
+      h1 {
+        font-size: 2rem;
+        background: linear-gradient(90deg, #d4af37, #f9f295);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 8px;
+      }
+
+      .subtitle {
+        font-size: 1rem;
+        color: #aaa;
+      }
+
+      .main-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+      }
+
+      /* 八卦图容器 */
+      .bagua-container {
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .bagua-container:active {
+        transform: scale(0.98);
+      }
+
+      /* SVG八卦图 */
+      .bagua-svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4));
+        transition: transform 5s linear;
+      }
+
+      .bagua-svg.spinning {
+        transform: rotate(1800deg); /* 旋转5圈，持续5秒 */
+      }
+
+      /* 卦象结果区域 */
+      .result-container {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 25px 20px;
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        display: none; /* 初始隐藏 */
+        text-align: left;
+      }
+
+      .result-container.show {
+        display: block;
+        animation: fadeInUp 0.8s ease;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(212, 175, 55, 0.5);
+      }
+
+      .result-title {
+        font-size: 1.8rem;
+        color: #d4af37;
+      }
+
+      .result-number {
+        font-size: 1rem;
+        color: #aaa;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 5px 12px;
+        border-radius: 20px;
+      }
+
+      .result-content h3 {
+        font-size: 1.2rem;
+        color: #d4af37;
+        margin: 15px 0 8px 0;
+      }
+
+      .result-content p {
+        font-size: 1rem;
+        color: #ddd;
+        margin-bottom: 15px;
+        text-align: justify;
+      }
+
+      /* 操作提示 */
+      .instruction {
+        color: #888;
+        font-size: 0.9rem;
+        margin-top: 10px;
+      }
+
+      /* 响应式调整 */
+      @media (max-width: 480px) {
+        body {
+          padding: 15px;
+        }
+
+        .container {
+          padding: 15px 5px;
+        }
+
+        header {
+          margin-bottom: 20px;
+        }
+
+        h1 {
+          font-size: 1.6rem;
+        }
+
+        .subtitle {
+          font-size: 0.9rem;
+        }
+
+        .bagua-container {
+          height: 220px;
+        }
+
+        .main-content {
+          gap: 20px;
+        }
+
+        .instruction {
+          font-size: 0.85rem;
+          padding: 0 10px;
+        }
+
+        .result-container {
+          padding: 20px 15px;
+          border-radius: 16px;
+        }
+
+        .result-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+          margin-bottom: 15px;
+          padding-bottom: 12px;
+        }
+
+        .result-title {
+          font-size: 1.5rem;
+        }
+
+        .result-number {
+          font-size: 0.85rem;
+        }
+
+        .result-content h3 {
+          font-size: 1.1rem;
+          margin: 12px 0 6px 0;
+        }
+
+        .result-content p {
+          font-size: 0.95rem;
+          margin-bottom: 12px;
+        }
+      }
+
+      /* 超小屏幕适配 */
+      @media (max-width: 360px) {
+        h1 {
+          font-size: 1.4rem;
+        }
+
+        .bagua-container {
+          height: 200px;
+        }
+
+        .result-title {
+          font-size: 1.3rem;
+        }
+      }
+
+      /* 适配刘海屏和安全区域 */
+      @supports (padding-top: env(safe-area-inset-top)) {
+        body {
+          padding-top: max(20px, env(safe-area-inset-top));
+          padding-bottom: max(20px, env(safe-area-inset-bottom));
+          padding-left: max(20px, env(safe-area-inset-left));
+          padding-right: max(20px, env(safe-area-inset-right));
+        }
+      }
+
+      /* 触摸设备优化 */
+      @media (hover: none) {
+        .bagua-container:active {
+          transform: scale(0.95);
+        }
+      }
+
+      /* 广告弹窗样式 */
+      .ad-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        backdrop-filter: blur(5px);
+      }
+
+      .ad-modal.show {
+        display: flex;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .ad-container {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 1px solid rgba(212, 175, 55, 0.5);
+        border-radius: 20px;
+        padding: 30px 20px;
+        max-width: 90%;
+        width: 360px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+
+      .ad-title {
+        font-size: 1.3rem;
+        color: #d4af37;
+        margin-bottom: 15px;
+      }
+
+      .ad-content {
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .ad-placeholder {
+        width: 100%;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: #888;
+        font-size: 0.9rem;
+      }
+
+      .ad-placeholder-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        opacity: 0.5;
+      }
+
+      .ad-timer {
+        font-size: 1rem;
+        color: #aaa;
+        margin-top: 15px;
+      }
+
+      .ad-close-btn {
+        background: linear-gradient(90deg, #d4af37, #f9f295);
+        color: #1a1a2e;
+        border: none;
+        padding: 12px 40px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      .ad-close-btn.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .ad-close-btn.active:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+      }
+
+      /* 激励视频广告容器（腾讯/谷歌广告位） */
+      #ad-slot {
+        width: 100%;
+        height: 200px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* 移动端广告弹窗适配 */
+      @media (max-width: 480px) {
+        .ad-container {
+          padding: 25px 15px;
+          width: 320px;
+        }
+
+        .ad-title {
+          font-size: 1.2rem;
+        }
+
+        .ad-placeholder {
+          height: 180px;
+        }
+
+        .ad-placeholder-icon {
+          font-size: 2.5rem;
+        }
+
+        .ad-close-btn {
+          padding: 10px 35px;
+          font-size: 0.95rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>易经·随机占卜</h1>
+        <p class="subtitle">点击八卦图，静待天机显现</p>
+      </header>
+
+      <main class="main-content">
+        <div class="bagua-container" id="baguaContainer">
+          <img src="bagua.png" class="bagua-svg" id="baguaSvg" alt="八卦图" />
+        </div>
+
+        <p class="instruction">点击上方八卦图开始占卜，旋转停止后显示卦象</p>
+
+        <div class="result-container" id="resultContainer">
+          <div class="result-header">
+            <h2 class="result-title" id="guaName">乾为天</h2>
+            <span class="result-number" id="guaNumber">第1卦</span>
+          </div>
+          <div class="result-content">
+            <h3>卦辞</h3>
+            <p id="guaCi">元，亨，利，贞。</p>
+            <h3>象曰</h3>
+            <p id="guaXiang">天行健，君子以自强不息。</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 广告弹窗 -->
+    <div class="ad-modal" id="adModal">
+      <div class="ad-container">
+        <h3 class="ad-title">天机推演中...</h3>
+        <div class="ad-content">
+          <!-- 广告位容器 - 替换为实际广告代码 -->
+          <div id="ad-slot">
+            <div class="ad-placeholder">
+              <div class="ad-placeholder-icon">📺</div>
+              <div>广告加载中...</div>
+            </div>
+          </div>
+          <div class="ad-timer" id="adTimer">剩余 5 秒</div>
+        </div>
+        <button class="ad-close-btn" id="adCloseBtn" disabled>继续解卦</button>
+      </div>
+    </div>
+
+    <script>
+      // 易经六十四卦数据（完整64卦）
+      const sixtyFourGua = [
+        {
+          name: "乾为天",
+          ci: "元，亨，利，贞。",
+          xiang: "天行健，君子以自强不息。",
+        },
+        {
+          name: "坤为地",
+          ci: "元，亨，利牝马之贞。君子有攸往，先迷后得主，利西南得朋，东北丧朋。安贞，吉。",
+          xiang: "地势坤，君子以厚德载物。",
+        },
+        {
+          name: "水雷屯",
+          ci: "元，亨，利，贞。勿用，有攸往，利建侯。",
+          xiang: "云，雷，屯；君子以经纶。",
+        },
+        {
+          name: "山水蒙",
+          ci: "亨。匪我求童蒙，童蒙求我。初噬告，再三渎，渎则不告。利贞。",
+          xiang: "山下出泉，蒙；君子以果行育德。",
+        },
+        {
+          name: "水天需",
+          ci: "有孚，光亨，贞吉。利涉大川。",
+          xiang: "云上于天，需；君子以饮食宴乐。",
+        },
+        {
+          name: "天水讼",
+          ci: "有孚，窒惕，中吉。终凶。利见大人，不利涉大川。",
+          xiang: "天与水违行，讼；君子以作事谋始。",
+        },
+        {
+          name: "地水师",
+          ci: "贞，丈人吉，无咎。",
+          xiang: "地中有水，师；君子以容民畜众。",
+        },
+        {
+          name: "水地比",
+          ci: "吉。原筮，元永贞，无咎。不宁方来，后夫凶。",
+          xiang: "地上有水，比；先王以建万国，亲诸侯。",
+        },
+        {
+          name: "风天小畜",
+          ci: "亨。密云不雨，自我西郊。",
+          xiang: "风行天上，小畜；君子以懿文德。",
+        },
+        {
+          name: "天泽履",
+          ci: "履虎尾，不咥人，亨。",
+          xiang: "上天下泽，履；君子以辨上下，定民志。",
+        },
+        {
+          name: "地天泰",
+          ci: "小往大来，吉亨。",
+          xiang: "天地交，泰；后以财成天地之道，辅相天地之宜，以左右民。",
+        },
+        {
+          name: "天地否",
+          ci: "否之匪人，不利君子贞，大往小来。",
+          xiang: "天地不交，否；君子以俭德辟难，不可荣以禄。",
+        },
+        {
+          name: "天火同人",
+          ci: "同人于野，亨。利涉大川，利君子贞。",
+          xiang: "天与火，同人；君子以类族辨物。",
+        },
+        {
+          name: "火天大有",
+          ci: "元亨。",
+          xiang: "火在天上，大有；君子以遏恶扬善，顺天休命。",
+        },
+        {
+          name: "地山谦",
+          ci: "亨，君子有终。",
+          xiang: "地中有山，谦；君子以裒多益寡，称物平施。",
+        },
+        {
+          name: "雷地豫",
+          ci: "利建侯行师。",
+          xiang: "雷出地奋，豫。先王以作乐崇德，殷荐之上帝，以配祖考。",
+        },
+        {
+          name: "泽雷随",
+          ci: "元亨利贞，无咎。",
+          xiang: "泽中有雷，随；君子以向晦入宴息。",
+        },
+        {
+          name: "山风蛊",
+          ci: "元亨，利涉大川。先甲三日，后甲三日。",
+          xiang: "山下有风，蛊；君子以振民育德。",
+        },
+        {
+          name: "地泽临",
+          ci: "元，亨，利，贞。至于八月有凶。",
+          xiang: "泽上有地，临；君子以教思无穷，容保民无疆。",
+        },
+        {
+          name: "风地观",
+          ci: "盥而不荐，有孚颙若。",
+          xiang: "风行地上，观；先王以省方，观民设教。",
+        },
+        {
+          name: "火雷噬嗑",
+          ci: "亨。利用狱。",
+          xiang: "雷电噬嗑；先王以明罚敕法。",
+        },
+        {
+          name: "山火贲",
+          ci: "亨。小利有攸往。",
+          xiang: "山下有火，贲；君子以明庶政，无敢折狱。",
+        },
+        {
+          name: "山地剥",
+          ci: "不利有攸往。",
+          xiang: "山附于地，剥；上以厚下，安宅。",
+        },
+        {
+          name: "地雷复",
+          ci: "亨。出入无疾，朋来无咎。反复其道，七日来复，利有攸往。",
+          xiang: "雷在地中，复；先王以至日闭关，商旅不行，后不省方。",
+        },
+        {
+          name: "天雷无妄",
+          ci: "元，亨，利，贞。其匪正有眚，不利有攸往。",
+          xiang: "天下雷行，物与无妄；先王以茂对时，育万物。",
+        },
+        {
+          name: "山天大畜",
+          ci: "利贞，不家食吉，利涉大川。",
+          xiang: "天在山中，大畜；君子以多识前言往行，以畜其德。",
+        },
+        {
+          name: "山雷颐",
+          ci: "贞吉。观颐，自求口实。",
+          xiang: "山下有雷，颐；君子以慎言语，节饮食。",
+        },
+        {
+          name: "泽风大过",
+          ci: "栋桡，利有攸往，亨。",
+          xiang: "泽灭木，大过；君子以独立不惧，遁世无闷。",
+        },
+        {
+          name: "坎为水",
+          ci: "习坎，有孚，维心亨，行有尚。",
+          xiang: "水洊至，习坎；君子以常德行，习教事。",
+        },
+        {
+          name: "离为火",
+          ci: "利贞，亨。畜牝牛，吉。",
+          xiang: "明两作，离，大人以继明照于四方。",
+        },
+        {
+          name: "泽山咸",
+          ci: "亨，利贞，取女吉。",
+          xiang: "山上有泽，咸；君子以虚受人。",
+        },
+        {
+          name: "雷风恒",
+          ci: "亨，无咎，利贞，利有攸往。",
+          xiang: "雷风，恒；君子以立不易方。",
+        },
+        {
+          name: "天山遁",
+          ci: "亨，小利贞。",
+          xiang: "天下有山，遁；君子以远小人，不恶而严。",
+        },
+        {
+          name: "雷天大壮",
+          ci: "利贞。",
+          xiang: "雷在天上，大壮；君子以非礼弗履。",
+        },
+        {
+          name: "火地晋",
+          ci: "康侯用锡马蕃庶，昼日三接。",
+          xiang: "明出地上，晋；君子以自昭明德。",
+        },
+        {
+          name: "地火明夷",
+          ci: "利艰贞。",
+          xiang: "明入地中，明夷；君子以莅众，用晦而明。",
+        },
+        {
+          name: "风火家人",
+          ci: "利女贞。",
+          xiang: "风自火出，家人；君子以言有物，而行有恒。",
+        },
+        {
+          name: "火泽睽",
+          ci: "小事吉。",
+          xiang: "上火下泽，睽；君子以同而异。",
+        },
+        {
+          name: "水山蹇",
+          ci: "利西南，不利东北；利见大人，贞吉。",
+          xiang: "山上有水，蹇；君子以反身修德。",
+        },
+        {
+          name: "雷水解",
+          ci: "利西南，无所往，其来复吉。有攸往，夙吉。",
+          xiang: "雷雨作，解；君子以赦过宥罪。",
+        },
+        {
+          name: "山泽损",
+          ci: "有孚，元吉，无咎，可贞，利有攸往。曷之用？二簋可用享。",
+          xiang: "山下有泽，损；君子以惩忿窒欲。",
+        },
+        {
+          name: "风雷益",
+          ci: "利有攸往，利涉大川。",
+          xiang: "风雷，益；君子以见善则迁，有过则改。",
+        },
+        {
+          name: "泽天夬",
+          ci: "扬于王庭，孚号，有厉，告自邑，不利即戎，利有攸往。",
+          xiang: "泽上于天，夬；君子以施禄及下，居德则忌。",
+        },
+        {
+          name: "天风姤",
+          ci: "女壮，勿用取女。",
+          xiang: "天下有风，姤；后以施命诰四方。",
+        },
+        {
+          name: "泽地萃",
+          ci: "亨。王假有庙，利见大人，亨，利贞。用大牲吉，利有攸往。",
+          xiang: "泽上于地，萃；君子以除戎器，戒不虞。",
+        },
+        {
+          name: "地风升",
+          ci: "元亨，用见大人，勿恤，南征吉。",
+          xiang: "地中生木，升；君子以顺德，积小以高大。",
+        },
+        {
+          name: "泽水困",
+          ci: "亨，贞，大人吉，无咎，有言不信。",
+          xiang: "泽无水，困；君子以致命遂志。",
+        },
+        {
+          name: "水风井",
+          ci: "改邑不改井，无丧无得，往来井井。汔至，亦未繘井，羸其瓶，凶。",
+          xiang: "木上有水，井；君子以劳民劝相。",
+        },
+        {
+          name: "泽火革",
+          ci: "巳日乃孚，元亨利贞，悔亡。",
+          xiang: "泽中有火，革；君子以治历明时。",
+        },
+        {
+          name: "火风鼎",
+          ci: "元吉，亨。",
+          xiang: "木上有火，鼎；君子以正位凝命。",
+        },
+        {
+          name: "震为雷",
+          ci: "亨。震来虩虩，笑言哑哑。震惊百里，不丧匕鬯。",
+          xiang: "洊雷，震；君子以恐惧修省。",
+        },
+        {
+          name: "艮为山",
+          ci: "艮其背，不获其身，行其庭，不见其人，无咎。",
+          xiang: "兼山，艮；君子以思不出其位。",
+        },
+        {
+          name: "风山渐",
+          ci: "女归吉，利贞。",
+          xiang: "山上有木，渐；君子以居贤德，善俗。",
+        },
+        {
+          name: "雷泽归妹",
+          ci: "征凶，无攸利。",
+          xiang: "泽上有雷，归妹；君子以永终知敝。",
+        },
+        {
+          name: "雷火丰",
+          ci: "亨，王假之，勿忧，宜日中。",
+          xiang: "雷电皆至，丰；君子以折狱致刑。",
+        },
+        {
+          name: "火山旅",
+          ci: "小亨，旅贞吉。",
+          xiang: "山上有火，旅；君子以明慎用刑，而不留狱。",
+        },
+        {
+          name: "巽为风",
+          ci: "小亨，利攸往，利见大人。",
+          xiang: "随风，巽；君子以申命行事。",
+        },
+        {
+          name: "兑为泽",
+          ci: "亨，利贞。",
+          xiang: "丽泽，兑；君子以朋友讲习。",
+        },
+        {
+          name: "风水涣",
+          ci: "亨。王假有庙，利涉大川，利贞。",
+          xiang: "风行水上，涣；先王以享于帝立庙。",
+        },
+        {
+          name: "水泽节",
+          ci: "亨。苦节不可贞。",
+          xiang: "泽上有水，节；君子以制数度，议德行。",
+        },
+        {
+          name: "风泽中孚",
+          ci: "豚鱼吉，利涉大川，利贞。",
+          xiang: "泽上有风，中孚；君子以议狱缓死。",
+        },
+        {
+          name: "雷山小过",
+          ci: "亨，利贞，可小事，不可大事。飞鸟遗之音，不宜上宜下，大吉。",
+          xiang: "山上有雷，小过；君子以行过乎恭，丧过乎哀，用过乎俭。",
+        },
+        {
+          name: "水火既济",
+          ci: "亨，小利贞，初吉终乱。",
+          xiang: "水在火上，既济；君子以思患而预防之。",
+        },
+        {
+          name: "火水未济",
+          ci: "亨，小狐汔济，濡其尾，无攸利。",
+          xiang: "火在水上，未济；君子以慎辨物居方。",
+        },
+      ];
+
+      // DOM 元素
+      const baguaContainer = document.getElementById("baguaContainer");
+      const baguaSvg = document.getElementById("baguaSvg");
+      const resultContainer = document.getElementById("resultContainer");
+      const guaNameElement = document.getElementById("guaName");
+      const guaNumberElement = document.getElementById("guaNumber");
+      const guaCiElement = document.getElementById("guaCi");
+      const guaXiangElement = document.getElementById("guaXiang");
+      const adModal = document.getElementById("adModal");
+      const adTimer = document.getElementById("adTimer");
+      const adCloseBtn = document.getElementById("adCloseBtn");
+
+      // 随机选择一个卦
+      function getRandomGua() {
+        const randomIndex = Math.floor(Math.random() * sixtyFourGua.length);
+        return {
+          ...sixtyFourGua[randomIndex],
+          number: randomIndex + 1,
+        };
+      }
+
+      // 显示卦象结果
+      function showGuaResult(gua) {
+        guaNameElement.textContent = gua.name;
+        guaNumberElement.textContent = `第${gua.number}卦`;
+        guaCiElement.textContent = gua.ci;
+        guaXiangElement.textContent = gua.xiang;
+
+        // 显示结果容器
+        resultContainer.classList.add("show");
+
+        // 滚动到结果区域
+        resultContainer.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }
+
+      // 显示广告弹窗
+      function showAdModal() {
+        adModal.classList.add("show");
+        let remainingTime = 5;
+        adTimer.textContent = `剩余 ${remainingTime} 秒`;
+        adCloseBtn.classList.remove("active");
+        adCloseBtn.disabled = true;
+
+        // 加载广告 - 在这里接入腾讯或谷歌广告
+        loadAd();
+
+        return new Promise((resolve) => {
+          const timer = setInterval(() => {
+            remainingTime--;
+            adTimer.textContent = `剩余 ${remainingTime} 秒`;
+
+            if (remainingTime <= 0) {
+              clearInterval(timer);
+              adCloseBtn.classList.add("active");
+              adCloseBtn.disabled = false;
+              adCloseBtn.onclick = () => {
+                closeAdModal();
+                resolve();
+              };
+            }
+          }, 1000);
+        });
+      }
+
+      // 关闭广告弹窗
+      function closeAdModal() {
+        adModal.classList.remove("show");
+      }
+
+      // 加载广告 - 接入腾讯或谷歌广告
+      function loadAd() {
+        // ==================== 腾讯广告接入示例 ====================
+        // 请替换为你的腾讯广告位 ID
+        // window.TencentGDT = window.TencentGDT || [];
+        // window.TencentGDT.push({
+        //   placement_id: 'YOUR_PLACEMENT_ID',
+        //   type: 'rewardVideo',
+        //   containerid: 'ad-slot',
+        //   onComplete: function() {
+        //     console.log('广告播放完成');
+        //   }
+        // });
+
+        // ==================== 谷歌 AdSense/AdMob 接入示例 ====================
+        // 请替换为你的谷歌广告单元 ID
+        // (adsbygoogle = window.adsbygoogle || []).push({
+        //   google_ad_client: "ca-pub-YOUR_PUBLISHER_ID",
+        //   google_ad_slot: "YOUR_AD_SLOT_ID",
+        //   google_ad_width: 300,
+        //   google_ad_height: 250
+        // });
+
+        // 当前使用模拟广告
+        const adSlot = document.getElementById("ad-slot");
+        adSlot.innerHTML = `
+          <div class="ad-placeholder">
+            <div class="ad-placeholder-icon">☯️</div>
+            <div>正在推演天机...</div>
+            <div style="font-size: 0.8rem; margin-top: 10px; opacity: 0.6;">广告位预留</div>
+          </div>
+        `;
+      }
+
+      // 点击八卦图事件
+      baguaContainer.addEventListener("click", async function () {
+        // 如果已经在旋转，则不做处理
+        if (baguaSvg.classList.contains("spinning")) {
+          return;
+        }
+
+        // 隐藏之前的结果
+        resultContainer.classList.remove("show");
+
+        // 开始旋转
+        baguaSvg.classList.add("spinning");
+
+        // 显示广告弹窗并等待
+        await showAdModal();
+
+        // 广告关闭后停止旋转并显示随机卦象
+        baguaSvg.classList.remove("spinning");
+
+        // 获取随机卦象
+        const randomGua = getRandomGua();
+
+        // 显示结果
+        setTimeout(() => {
+          showGuaResult(randomGua);
+        }, 300);
+      });
+
+      // 初始显示一个卦象
+      window.addEventListener("DOMContentLoaded", function () {
+        // 可以在这里初始化显示一个卦象，例如第一卦
+        // showGuaResult({...sixtyFourGua[0], number: 1});
+      });
+    </script>
+  </body>
+</html>
